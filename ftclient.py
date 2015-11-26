@@ -74,9 +74,9 @@ def main():
 
 	#send message
 	make_request(str(sys.argv[1:]), clientSocket)
-
-	#receive error message if appropriate
-	rec_msg(clientSocket, serverName, serverPort)
+	
+	while(1):
+		rec_msg(clientSocket, serverName, serverPort)
 
 	#close control connection
 	if clientSocket.close() == -1:
