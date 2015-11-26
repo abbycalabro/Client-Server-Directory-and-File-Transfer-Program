@@ -55,85 +55,6 @@ int start_up(int server_port) {
 	return sockfd;
 }
 
-bool handle_request(int new_sockfd) {
-	int bytes_read, i;
-	char buffer[504];
-	char *tok;
-	char *args[504];
-	const char *msg;	
-
-	//receive command
-	bytes_read = recv(new_sockfd, buffer, sizeof(buffer), 0);
-
-	//parse buffer for command arguments
-	tok = strtok(buffer, "[',]\n ");
-	for(i = 0; tok != NULL; i++) {
-		args[i] = tok;
-		cout << "Current tok: " << args[i] << endl;
-		tok = strtok(NULL, "[',]\n ");
-	}
-
-	//handle request based on command
-	if(strcmp(args[2], "-l") == 0) {
-		cout << "Let me list that for for you!" << endl;
-	}	
-	else if(strcmp(args[2], "-g") == 0) {
-		cout << "Let me get that for for you!" << endl;
-	}
-	else {
-		//send error message to client
-		msg = "INVALID COMMAND";
-		if(send(new_sockfd, msg, strlen(msg), 0) < 0)
-			cout << "Error sending error message to client" << endl;
-	}
-
-
-	//handle request or close connection
-	if(bytes_read > 0) {
-		buffer[bytes_read] = '\0';
-		return true;
-	}
-	else if(bytes_read < 0)
-		cout << "Error receiving message from client." << endl;
-	else if(bytes_read == 0) {
-		//close connection
-		if(close(new_sockfd) !=  0)
-			cout << "Error closing connection" << endl;
-		else
-			cout << "Connection closed." << endl;
-		return false;
-	}
-}
-
-bool send_msg(int new_sockfd) {
-	string msg;
-	const char *c_msg;
-
-	//get message
-	cout << "A > ";
-	getline(cin, msg, '\n');
-	while(msg.length() < 1 || msg.length() > 500) {
-		cout << "Messages must be between 1 and 500 characters. Try again." << endl;
-		cout << "A > ";
-		getline(cin, msg, '\n');
-	}
-	
-	//close connection or send message
-	if(msg == "/quit") {
-		if(close(new_sockfd) !=  0)
-			cout << "Error closing connection." << endl;
-		cout << "Connection closed." << endl;
-		return false;
-	}
-	else {
-		//send message
-		c_msg = msg.c_str();
-		if(send(new_sockfd, c_msg, strlen(c_msg), 0) < 0)
-			cout << "Error sending message to client" << endl;
-		return true;
-	}
-}
-
 int new_connection(int sockfd) {
 	int new_sockfd;
 	struct sockaddr_in client_addr;
@@ -152,6 +73,63 @@ int new_connection(int sockfd) {
 	}
 
 	return new_sockfd;
+}
+
+bool handle_request(int new_sockfd) {
+	int bytes_read, i;
+	char buffer[504];
+	char *tok;
+	char *args[504];
+	const char *msg;	
+
+	//receive command
+	bytes_read = recv(new_sockfd, buffer, sizeof(buffer), 0);
+
+	//handle errors receiving command
+	if(bytes_read > 0) {
+		buffer[bytes_read] = '\0';
+	}
+	else if(bytes_read < 0) {
+		cout << "Error receiving command from client." << endl;
+		exit(EXIT_FAILURE);
+	}
+	else if(bytes_read == 0) {
+		//close connection and exit
+		if(close(new_sockfd) !=  0)
+			cout << "Error closing connection" << endl;
+		else
+			cout << "Connection closed." << endl;
+		exit(EXIT_FAILURE);
+	}
+	
+	//parse buffer for command arguments
+	tok = strtok(buffer, "[',]\n ");
+	for(i = 0; tok != NULL; i++) {
+		args[i] = tok;
+		//cout << "Current tok: " << args[i] << endl;
+		tok = strtok(NULL, "[',]\n ");
+	}
+
+	//handle request based on command
+	if(strcmp(args[2], "-l") == 0) {
+		//TODO up TCP data connection
+		
+		cout << "List directory requested on port " << args[3] << endl;		
+	
+	}	
+	else if(strcmp(args[2], "-g") == 0) {
+		//TODO set up TCP data connection
+		
+		cout << "File '" << args[3] << "' requested on port " << args[4] << endl;
+	
+	}
+	else {
+		//send error message to client
+		msg = "INVALID COMMAND";
+		if(send(new_sockfd, msg, strlen(msg), 0) < 0)
+			cout << "Error sending error message to client" << endl;
+	}
+	return true;
 }
 
 int main(int argc, char* argv[]) {

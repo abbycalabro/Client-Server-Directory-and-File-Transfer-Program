@@ -17,7 +17,7 @@ import sys
 
 def init_contact(serverName, serverPort):
 	#validate command line arguments
-	#validate() 
+	validate() 
 	
 	#set up socket using validated arguments
 	clientSocket = socket(AF_INET, SOCK_STREAM)
@@ -75,8 +75,8 @@ def main():
 	#send message
 	make_request(str(sys.argv[1:]), clientSocket)
 	
-	while(1):
-		rec_msg(clientSocket, serverName, serverPort)
+	#receive error message when appropriate
+	rec_msg(clientSocket, serverName, serverPort)
 
 	#close control connection
 	if clientSocket.close() == -1:
