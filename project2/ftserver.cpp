@@ -55,31 +55,30 @@ int start_up(int server_port) {
 	return sockfd;
 }
 
-int new_connection(int sockfd) {
+int new_connection(int sockfd, string type) {
 	int new_sockfd;
 	struct sockaddr_in client_addr;
 	socklen_t addr_size;
-	char host[1024];
-	char service[20];
+	char host[1024], service[20];
 
-	//establish new control connection
+	//establish new connection
 	addr_size = sizeof(client_addr);
+	
 	new_sockfd = accept(sockfd, (struct sockaddr *)&client_addr, &addr_size);
+	
 	if(new_sockfd < 0)
 		cout << "Error accepting connection." << endl;
 	else {
 		getnameinfo((struct sockaddr *)&client_addr, sizeof(client_addr), host, sizeof(host), service, sizeof(service), 0);
-		cout << "Connection from " << host << " established." << endl;
+		cout << type << " connection from " << host << " established." << endl;
 	}
-
 	return new_sockfd;
 }
 
-bool handle_request(int new_sockfd) {
-	int bytes_read, i;
+bool handle_request(int new_sockfd, int sockfd) {
+	int bytes_read, i, data_sockfd, data_port;
 	char buffer[504];
-	char *tok;
-	char *args[504];
+	char *tok, *args[504];
 	const char *msg;	
 
 	//receive command
@@ -112,10 +111,26 @@ bool handle_request(int new_sockfd) {
 
 	//handle request based on command
 	if(strcmp(args[2], "-l") == 0) {
-		//TODO up TCP data connection
+		data_port = atoi(args[3]);
 		
-		cout << "List directory requested on port " << args[3] << endl;		
-	
+		int welcome_sockfd = start_up(data_port);				
+		if(welcome_sockfd < 1)
+			cout << "Error creating welcome_sockfd" << endl;
+
+		//tell client that server is ready for data connection	
+		msg = "SUCCESS";
+		if(send(new_sockfd, msg, strlen(msg), 0) < 0)
+			cout << "Error sending data connection message to client" << endl;
+		
+		data_sockfd = new_connection(welcome_sockfd, "Data");
+		if(data_sockfd < 1)
+			cout << "Error creating data connection" << endl;
+
+		cout << "List directory requested on port " << data_port << endl;		
+
+		//send directory to client	
+		if(send(data_sockfd, msg, strlen(msg), 0) < 0)
+			cout << "Error sending directory to client" << endl;
 	}	
 	else if(strcmp(args[2], "-g") == 0) {
 		//TODO set up TCP data connection
@@ -133,7 +148,7 @@ bool handle_request(int new_sockfd) {
 }
 
 int main(int argc, char* argv[]) {
-	int sockfd, new_sockfd;
+	int sockfd, control_sockfd;
 	int server_port = atoi(argv[1]);
 
 	//set up sockets and start listening
@@ -142,14 +157,14 @@ int main(int argc, char* argv[]) {
 	cout << "Server open on " << server_port << endl;
 	
 	//accept new control connection 
-	new_sockfd = new_connection(sockfd);
+	control_sockfd = new_connection(sockfd, "Control");
 
-	if(!handle_request(new_sockfd))
+	if(!handle_request(control_sockfd, sockfd))
 		cout << "Error handling client request" << endl;
 
 	//close data connection
-	if(close(new_sockfd) == -1) 
-		cout << "Error closing data socket." << endl;
+//	if(close(control_sockfd) == -1) 
+//		cout << "Error closing data socket." << endl;
 	
 	return 0;
 }

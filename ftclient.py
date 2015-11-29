@@ -16,9 +16,6 @@ from socket import *
 import sys
 
 def init_contact(serverName, serverPort):
-	#validate command line arguments
-	validate() 
-	
 	#set up socket using validated arguments
 	clientSocket = socket(AF_INET, SOCK_STREAM)
 
@@ -53,7 +50,7 @@ def make_request(command, clientSocket):
 	else:
 		clientSocket.send(command)
 
-def rec_msg(clientSocket, serverName, serverPort):
+def receive_msg(clientSocket, serverName, serverPort):
 	#receive and print message, or end program
 	response = clientSocket.recv(500)
 	if len(response) == 0:
@@ -61,22 +58,42 @@ def rec_msg(clientSocket, serverName, serverPort):
 		clientSocket.close()
 		print "Connection closed. Now terminating."
 		sys.exit()
+	elif response == "SUCCESS":
+		return response
 	else:
 		print "%s:%d says: %s" % (serverName, serverPort, response)
-
+		return response
 
 def main():
+	#validate command line arguments
+	#validate() 
+	
 	serverName = sys.argv[1]
 	serverPort = int(sys.argv[2])
-	
-	#establish control connection to server
-	clientSocket = init_contact(serverName, serverPort)
+	command = sys.argv[3]
 
-	#send message
-	make_request(str(sys.argv[1:]), clientSocket)
+	#request control connection to server
+	clientSocket = init_contact(serverName, serverPort)
 	
-	#receive error message when appropriate
-	rec_msg(clientSocket, serverName, serverPort)
+	#send command and receive response to control connection
+	make_request(str(sys.argv[1:]), clientSocket)
+	control_response = receive_msg(clientSocket, serverName, serverPort)
+
+	if control_response == "SUCCESS":
+		#create data socket
+		if command == '-l':
+			dataPort = int(sys.argv[4])
+			dataSocket = init_contact(serverName, dataPort)
+			data_response = receive_msg(dataSocket, serverName, dataPort)
+
+			print "Receiving directory structure from %s:%s" % (serverName, dataPort)
+
+		elif command == '-g':
+			dataSocket = init_contact(serverName, int(sys.argv[5]))
+	else:
+		print "Error sending command. Terminating program."
+		sys.exit()
+
 
 	#close control connection
 	if clientSocket.close() == -1:
