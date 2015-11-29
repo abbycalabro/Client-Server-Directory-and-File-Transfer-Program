@@ -14,6 +14,7 @@ Resources used:
 
 from socket import *
 import sys
+import time
 
 def init_contact(serverName, serverPort):
 	#set up socket using validated arguments
@@ -84,9 +85,26 @@ def main():
 		if command == '-l':
 			dataPort = int(sys.argv[4])
 			dataSocket = init_contact(serverName, dataPort)
-			data_response = receive_msg(dataSocket, serverName, dataPort)
+			#data_response = receive_msg(dataSocket, serverName, dataPort)
 
 			print "Receiving directory structure from %s:%s" % (serverName, dataPort)
+
+			contents = []
+
+			data = dataSocket.recv(1024)
+			while data:
+				contents.append(dataSocket.recv(1024))
+				data = dataSocket.recv(1024)
+
+			for item in contents:
+				print item
+
+
+			'''
+			while(dataSocket.recv(1024)):
+				directory_contents = dataSocket.recv(1024)
+				print "%s\n" % (directory_contents)
+			'''
 
 		elif command == '-g':
 			dataSocket = init_contact(serverName, int(sys.argv[5]))

@@ -1,4 +1,4 @@
-/****************************************************************************************
+/********************************************************************************************************************************
 Program:		ftserver.cpp
 Assignment:     CS 372, Project 2
 Author:			Abby Meunier
@@ -14,7 +14,9 @@ Description:	Program takes port # as a command line argument, creates
 Resources:
 				http://www.bogotobogo.com/cplusplus/sockets_server_client.php
                 http://www.tutorialspoint.com/unix_sockets/socket_server_example.html
-******************************************************************************************/
+				http://www.informit.com/guides/content.aspx?g=cplusplus&seqNum=245
+				http://stackoverflow.com/questions/845556/how-to-ignore-hidden-files-with-opendir-and-readdir-in-c-library
+********************************************************************************************************************************/
 
 #include <iostream>
 #include <sys/socket.h>
@@ -25,6 +27,8 @@ Resources:
 #include <netdb.h>
 #include <stdio.h>
 #include <arpa/inet.h>
+#include <dirent.h>
+#include <vector>
 
 using namespace std;
 
@@ -51,7 +55,6 @@ int start_up(int server_port) {
 	//start listening for connections
 	if(listen(sockfd, 5) < 0)
 		cout << "Error listening for connections." << endl;
-
 	return sockfd;
 }
 
@@ -60,10 +63,9 @@ int new_connection(int sockfd, string type) {
 	struct sockaddr_in client_addr;
 	socklen_t addr_size;
 	char host[1024], service[20];
+	addr_size = sizeof(client_addr);
 
 	//establish new connection
-	addr_size = sizeof(client_addr);
-	
 	new_sockfd = accept(sockfd, (struct sockaddr *)&client_addr, &addr_size);
 	
 	if(new_sockfd < 0)
@@ -75,8 +77,33 @@ int new_connection(int sockfd, string type) {
 	return new_sockfd;
 }
 
+void send_directory(int sockfd) {
+	DIR *pdir;
+	struct dirent *current;
+	pdir = opendir(".");
+	string new_line = "\n";
+	string start = "start";
+
+	if(!pdir)
+		cout << "Error calling opendir()" << endl;
+	
+	if(send(sockfd, start.c_str(), strlen(start.c_str()), 0) < 0)
+		cout << "Error sending start to client" << endl;	
+
+	while((current = readdir(pdir))) {
+		//only send contents that are not hidden or end in ~
+		if(current->d_name[0] != '.' && current->d_name[strlen(current->d_name) - 1] != '~') {
+			if(send(sockfd, current->d_name, strlen(current->d_name), 0) < 0)
+				cout << "Error sending " << current->d_name << " to client" << endl;	
+			if(send(sockfd, new_line.c_str(), strlen(new_line.c_str()), 0) < 0)
+				cout << "Error sending new_line to client" << endl;	
+		}
+	}
+	closedir(pdir);
+}
+
 bool handle_request(int new_sockfd, int sockfd) {
-	int bytes_read, i, data_sockfd, data_port;
+	int bytes_read, i, data_sockfd, welcome_sockfd, data_port;
 	char buffer[504];
 	char *tok, *args[504];
 	const char *msg;	
@@ -105,7 +132,6 @@ bool handle_request(int new_sockfd, int sockfd) {
 	tok = strtok(buffer, "[',]\n ");
 	for(i = 0; tok != NULL; i++) {
 		args[i] = tok;
-		//cout << "Current tok: " << args[i] << endl;
 		tok = strtok(NULL, "[',]\n ");
 	}
 
@@ -113,7 +139,7 @@ bool handle_request(int new_sockfd, int sockfd) {
 	if(strcmp(args[2], "-l") == 0) {
 		data_port = atoi(args[3]);
 		
-		int welcome_sockfd = start_up(data_port);				
+		welcome_sockfd = start_up(data_port);				
 		if(welcome_sockfd < 1)
 			cout << "Error creating welcome_sockfd" << endl;
 
@@ -127,10 +153,11 @@ bool handle_request(int new_sockfd, int sockfd) {
 			cout << "Error creating data connection" << endl;
 
 		cout << "List directory requested on port " << data_port << endl;		
-
+		cout << "Sending directory contents to data port " << data_port << endl; 
+		
 		//send directory to client	
-		if(send(data_sockfd, msg, strlen(msg), 0) < 0)
-			cout << "Error sending directory to client" << endl;
+		send_directory(data_sockfd);
+
 	}	
 	else if(strcmp(args[2], "-g") == 0) {
 		//TODO set up TCP data connection
@@ -146,6 +173,7 @@ bool handle_request(int new_sockfd, int sockfd) {
 	}
 	return true;
 }
+
 
 int main(int argc, char* argv[]) {
 	int sockfd, control_sockfd;
