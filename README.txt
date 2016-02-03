@@ -17,10 +17,10 @@ To execute:	./serv <SERVER_PORT>
 ***************
 
 To execute:
-		To list server directory:       
+        To list server directory:       
         python ftclient.py <SERVER_HOST> <SERVER_PORT> -l <DATA_PORT>
 		
-		To receive file from server:    
+        To receive file from server:    
         python ftclient.py <SERVER_HOST> <SERVER_PORT> -g <FILE_NAME> <DATA_PORT>
 
 
