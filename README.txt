@@ -1,4 +1,4 @@
-File:		README.txt
+File:       README.txt
 Author:     Abby Meunier
 Email:      meuniera@oregonstate.edu
 Date:       11/29/2015
@@ -17,8 +17,8 @@ To execute:	./serv <SERVER_PORT>
 ***************
 
 To execute:
-		To list server directory:	    python ftclient.py <SERVER_HOST> <SERVER_PORT> -l <DATA_PORT>
-		To receive file from server:	python ftclient.py <SERVER_HOST> <SERVER_PORT> -g <FILE_NAME> <DATA_PORT>
+		To list server directory:       python ftclient.py <SERVER_HOST> <SERVER_PORT> -l <DATA_PORT>
+		To receive file from server:    python ftclient.py <SERVER_HOST> <SERVER_PORT> -g <FILE_NAME> <DATA_PORT>
 
 
 ****************

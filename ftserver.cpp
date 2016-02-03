@@ -12,14 +12,14 @@ Resources:
 #include <iostream>
 #include <sys/socket.h>
 #include <sys/types.h>
-#include <stdlib.h>
+#include <cstdlib>
 #include <string>
 #include <cstring>
 #include <netdb.h>
 #include <stdio.h>
 #include <arpa/inet.h>
 #include <dirent.h>
-#include <vector>
+#include <unistd.h>
 
 using namespace std;
 
@@ -95,9 +95,7 @@ void send_directory(int sockfd) {
 		cout << current->d_name << endl;
 		if(send(sockfd, current->d_name, strlen(current->d_name), 0) < 0)
 			cout << "Error sending " << current->d_name << " to client" << endl;	
-		if(send(sockfd, new_line.c_str(), strlen(new_line.c_str()), 0) < 0)
-			cout << "Error sending new_line to client" << endl;
-		sleep(0.2);	
+		usleep(200);	
 	}
 	
 	closedir(pdir);
@@ -137,7 +135,7 @@ void send_file(int data_sockfd, int control_sockfd, string file_name) {
 		while(fgets(buffer, sizeof(buffer), file_fd) != NULL) {
 			if(send(data_sockfd, buffer, strlen(buffer), 0) < 0)
 				cout << "Error sending file data" << endl;
-			sleep(0.01);
+			usleep(10);
 		}
 		fclose(file_fd);
 	}
@@ -235,7 +233,6 @@ bool handle_request(int new_sockfd, int sockfd) {
 
 	return true;
 }
-
 
 int main(int argc, char* argv[]) {
 	int sockfd, control_sockfd;
